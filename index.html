@@ -4,22 +4,86 @@
   <meta charset="UTF-8">
   <title>Hostel Finder App</title>
   <style>
-    body { font-family: Arial, sans-serif; background:#e0f7fa; margin:0; padding:20px; }
+    /* Colorful animated gradient background */
+    body {
+      font-family: Arial, sans-serif;
+      margin:0; padding:20px;
+      background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb, #a6c1ee);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      color:#333;
+    }
+    @keyframes gradientShift {
+      0% { background-position:0% 50%; }
+      50% { background-position:100% 50%; }
+      100% { background-position:0% 50%; }
+    }
+
+    /* Dark mode overrides */
+    body.dark {
+      background: linear-gradient(135deg, #141e30, #243b55);
+      color:#eee;
+    }
+    body.dark .container {
+      background: rgba(30,30,30,0.9);
+      color:#eee;
+    }
+    body.dark input, body.dark select {
+      background:#222; color:#eee; border:1px solid #555;
+    }
+    body.dark button {
+      background:#00aaff;
+    }
+    body.dark .card { background:#333; color:#eee; }
+    body.dark .card h3 { color:#00ffc8; }
+
     .page { display:none; }
     .active { display:block; }
-    .container { background:#fff; padding:20px; border-radius:10px; max-width:600px; margin:20px auto; box-shadow:0 0 15px rgba(0,0,0,0.2); }
+    .container {
+      background:#fff;
+      padding:20px;
+      border-radius:10px;
+      max-width:600px;
+      margin:20px auto;
+      box-shadow:0 0 15px rgba(0,0,0,0.2);
+    }
     h2 { text-align:center; }
-    input, select, button { width:100%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
+    input, select, button {
+      width:100%; padding:10px; margin:8px 0;
+      border-radius:6px; border:1px solid #ccc;
+    }
     button { background:#0066cc; color:#fff; border:none; cursor:pointer; }
     button:hover { background:#004999; }
     .choice-btn { width:200px; margin:10px auto; display:block; }
-    .card { background:#f9f9f9; padding:15px; margin:15px 0; border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.2); }
+    .card {
+      background:#f9f9f9; padding:15px; margin:15px 0;
+      border-radius:8px; box-shadow:0 0 10px rgba(0,0,0,0.2);
+    }
     .card h3 { margin:0; color:#0066cc; }
     img { max-width:100%; border-radius:6px; margin-top:8px; }
     .joined { margin-top:8px; font-size:14px; }
+    .link { text-align:center; margin-top:10px; color:#0066cc; cursor:pointer; }
+
+    /* Settings icon for mode toggle */
+    #modeToggle {
+      position:fixed; top:10px; right:10px;
+      width:36px; height:36px;
+      border:none; border-radius:50%;
+      background: rgba(0,0,0,0.6);
+      color:#fff; font-size:18px;
+      cursor:pointer; z-index:1000;
+      display:flex; align-items:center; justify-content:center;
+      transition: background 0.3s;
+    }
+    #modeToggle:hover { background: rgba(0,0,0,0.8); }
+    body.light #modeToggle { background: rgba(255,255,255,0.8); color:#333; }
+    body.light #modeToggle:hover { background: rgba(255,255,255,1); }
   </style>
 </head>
-<body>
+<body class="light">
+
+  <!-- Dark/Light mode toggle -->
+  <button id="modeToggle" onclick="toggleMode()">⚙️</button>
 
   <!-- LOGIN PAGE -->
   <div id="loginPage" class="page active container">
@@ -28,6 +92,18 @@
     <input type="password" id="loginPass" placeholder="Password">
     <button onclick="doLogin()">Login</button>
     <div id="loginMsg"></div>
+    <div class="link" onclick="showPage('registerPage')">New user? Register here</div>
+  </div>
+
+  <!-- REGISTRATION PAGE -->
+  <div id="registerPage" class="page container">
+    <h2>Register</h2>
+    <input type="text" id="regUser" placeholder="Choose a username">
+    <input type="password" id="regPass" placeholder="Choose a password">
+    <input type="password" id="regConfirm" placeholder="Confirm password">
+    <button onclick="doRegister()">Register</button>
+    <div id="regMsg"></div>
+    <div class="link" onclick="showPage('loginPage')">Already registered? Login here</div>
   </div>
 
   <!-- USER/PROVIDER CHOICE PAGE -->
@@ -35,6 +111,7 @@
     <h2>Welcome to Hostel Finder</h2>
     <button class="choice-btn" onclick="showPage('userPage')">User</button>
     <button class="choice-btn" onclick="showPage('providerPage')">Provider</button>
+    <div class="link" onclick="showPage('loginPage')">Logout</div>
   </div>
 
   <!-- PROVIDER PAGE -->
@@ -68,6 +145,12 @@
   </div>
 
 <script>
+  // Dark/Light mode toggle
+  function toggleMode() {
+    document.body.classList.toggle("dark");
+    document.body.classList.toggle("light");
+  }
+
   // Show/hide pages
   function showPage(id) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -81,86 +164,99 @@
     const u=document.getElementById("loginUser").value;
     const p=document.getElementById("loginPass").value;
     const msg=document.getElementById("loginMsg");
-    if((u==="admin" && p==="1234") || (u && p)) {
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    const found=users.find(user=>user.username===u && user.password===p);
+    if(found || (u==="admin" && p==="1234")) {
       msg.style.color="green"; msg.textContent="Login successful!";
       setTimeout(()=>showPage('choicePage'),1000);
     } else { msg.style.color="red"; msg.textContent="Invalid credentials!"; }
   }
 
-  // PROVIDER SAVE
+  // REGISTRATION
+  function doRegister() {
+    const u=document.getElementById("regUser").value;
+    const p=document.getElementById("regPass").value;
+    const c=document.getElementById("regConfirm").value;
+    const msg=document.getElementById("regMsg");
+    if(!u||!p||!c) { msg.style.color="red"; msg.textContent="Fill all fields"; return; }
+    if(p!==c) { msg.style.color="red"; msg.textContent="Passwords do not match"; return; }
+    let users=JSON.parse(localStorage.getItem("users"))||[];
+    if(users.some(user=>user.username===u)) { msg.style.color="red"; msg.textContent="Username already exists"; return; }
+    users.push({username:u,password:p});
+    localStorage.setItem("users", JSON.stringify(users));
+    msg.style.color="green"; msg.textContent="Registration successful!";
+    setTimeout(()=>showPage('loginPage'),1000);
+  }
+
+  // Save provider accommodation data
   function saveData() {
-    const location=document.getElementById("location").value;
-    const type=document.getElementById("type").value;
-    const price=document.getElementById("price").value;
-    const contact=document.getElementById("contact").value;
-    const rooms=document.getElementById("rooms").value;
-    const vacancy=document.getElementById("vacancy").value;
-    const photo=document.getElementById("photo").value;
-    if(!location||!price||!contact||!rooms||!vacancy) {
-      document.getElementById("providerMsg").textContent="Please fill all fields!";
-      document.getElementById("providerMsg").style.color="red"; return;
+    const location = document.getElementById('location').value.trim();
+    const type = document.getElementById('type').value;
+    const price = document.getElementById('price').value.trim();
+    const contact = document.getElementById('contact').value.trim();
+    const rooms = parseInt(document.getElementById('rooms').value);
+    const vacancy = parseInt(document.getElementById('vacancy').value);
+    const photo = document.getElementById('photo').value.trim();
+    const msg = document.getElementById('providerMsg');
+
+    if (!location || !price || !contact || isNaN(rooms) || isNaN(vacancy) || !photo) {
+      msg.style.color = 'red';
+      msg.textContent = 'Please fill all fields correctly.';
+      return;
     }
-    let accommodations=JSON.parse(localStorage.getItem("accommodations"))||[];
-    accommodations.push({location,type,price,contact,rooms,vacancy:parseInt(vacancy),photo,joinedUsers:[]});
-    localStorage.setItem("accommodations",JSON.stringify(accommodations));
-    document.getElementById("providerMsg").textContent="Accommodation saved!";
-    document.getElementById("providerMsg").style.color="green";
+
+    let providers = JSON.parse(localStorage.getItem('providers')) || [];
+    providers.push({ location, type, price, contact, rooms, vacancy, photo });
+    localStorage.setItem('providers', JSON.stringify(providers));
+
+    msg.style.color = 'green';
+    msg.textContent = 'Accommodation saved!';
+
+    // Clear inputs
+    document.getElementById('location').value = '';
+    document.getElementById('price').value = '';
+    document.getElementById('contact').value = '';
+    document.getElementById('rooms').value = '';
+    document.getElementById('vacancy').value = '';
+    document.getElementById('photo').value = '';
+
     loadProviderList();
   }
 
-  // PROVIDER LIST
+  // Load provider accommodations
   function loadProviderList() {
-    const listDiv=document.getElementById("providerList");
-    const accommodations=JSON.parse(localStorage.getItem("accommodations"))||[];
-    listDiv.innerHTML=accommodations.map(acc=>`
-      <div class="card">
-        <strong>${acc.type} in ${acc.location}</strong><br>
-        Price: ${acc.price}<br>
-        Contact: ${acc.contact}<br>
-        Rooms: ${acc.rooms}<br>
-        Vacancy: ${acc.vacancy}
-        ${acc.photo?`<img src="${acc.photo}" alt="photo">`:""}
-        <div class="joined"><b>Joined Users:</b><br>
-          ${acc.joinedUsers.length>0?acc.joinedUsers.map(u=>`👤 ${u.name} (${u.contact})`).join("<br>"):"No users yet"}
-        </div>
-      </div>`).join("");
-  }
-
-  // USER LIST
-  function loadUserList() {
-    const resultsDiv=document.getElementById("userResults");
-    const accommodations=JSON.parse(localStorage.getItem("accommodations"))||[];
-    if(accommodations.length===0) {
-      resultsDiv.innerHTML="<p>No accommodations available yet.</p>"; return;
+    const list = document.getElementById('providerList');
+    let providers = JSON.parse(localStorage.getItem('providers')) || [];
+    list.innerHTML = '';
+    if(providers.length === 0) {
+      list.textContent = 'No accommodations added yet.';
+      return;
     }
-    resultsDiv.innerHTML=accommodations.map((acc,index)=>`
-      <div class="card">
-        <h3>${acc.type} in ${acc.location}</h3>
-        <p>💰 Price: ${acc.price}</p>
-        <p>☎ Contact: ${acc.contact}</p>
-        <p>🛏 Rooms: ${acc.rooms}</p>
-        <p>👥 Vacancy: ${acc.vacancy}</p>
-        ${acc.photo?`<img src="${acc.photo}" alt="photo">`:""}
-        <button onclick="joinAccommodation(${index})" ${acc.vacancy<=0?"disabled":""}>
-          ${acc.vacancy>0?"Join":"Full"}
-        </button>
-      </div>`).join("");
+    providers.forEach((p, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h3>${p.type} in ${p.location}</h3><p>Price: ${p.price}</p><p>Contact: ${p.contact}</p><p>Rooms: ${p.rooms}</p><p>Vacancy: ${p.vacancy}</p><img src='${p.photo}' alt='Photo'>`;
+      list.appendChild(card);
+    });
   }
 
-  // USER JOIN
-  function joinAccommodation(index) {
-    const name=prompt("Enter your name:");
-    const contact=prompt("Enter your contact number:");
-    if(!name||!contact) return;
-    let accommodations=JSON.parse(localStorage.getItem("accommodations"))||[];
-    if(accommodations[index].vacancy>0) {
-      accommodations[index].joinedUsers.push({name,contact});
-      accommodations[index].vacancy-=1;
-      localStorage.setItem("accommodations",JSON.stringify(accommodations));
-      alert("You have joined!");
-      loadUserList();
-    } else { alert("No vacancy left!"); }
+  // Load user view accommodations
+  function loadUserList() {
+    const results = document.getElementById('userResults');
+    let providers = JSON.parse(localStorage.getItem('providers')) || [];
+    results.innerHTML = '';
+    if(providers.length === 0) {
+      results.textContent = 'No accommodations available.';
+      return;
+    }
+    providers.forEach((p, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `<h3>${p.type} in ${p.location}</h3><p>Price: ${p.price}</p><p>Contact: ${p.contact}</p><p>Rooms: ${p.rooms}</p><p>Vacancy: ${p.vacancy}</p><img src='${p.photo}' alt='Photo'>`;
+      results.appendChild(card);
+    });
   }
+
 </script>
 </body>
 </html>
